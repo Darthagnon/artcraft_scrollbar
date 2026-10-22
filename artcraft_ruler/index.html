@@ -1,38 +1,72 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ArtCraft ruler scrollbar — isolated demo</title>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ArtCraft ruler — two scales and section index</title>
 <style>
-/* Dimensions, palette, tick geometry and digit styling derived from the supplied ArtCraft page/CSS. */
-:root{--bg:#f2f1ee;--ink:#101014;--accent:#2d81ff;--accent-ink:#1659c4}
-*{box-sizing:border-box}html{scrollbar-width:none;background:var(--bg)}html::-webkit-scrollbar{display:none}body{margin:0;background:var(--bg);color:var(--ink)}main{height:6007px;position:relative}
-#ruler{position:fixed;right:0;top:0;bottom:0;width:60px;z-index:40;overflow:hidden;cursor:crosshair;touch-action:none;user-select:none}
-#glass{position:absolute;inset:0;pointer-events:none;backdrop-filter:blur(9px);background:color-mix(in srgb,var(--bg) 55%,transparent);mask-image:linear-gradient(to left,black 40%,rgba(0,0,0,.745) 47.5%,rgba(0,0,0,.53) 55%,rgba(0,0,0,.356) 62.5%,rgba(0,0,0,.22) 70%,rgba(0,0,0,.116) 77.5%,rgba(0,0,0,.047) 85%,rgba(0,0,0,.01) 92.5%,transparent 100%)}
-#tickRail{position:absolute;left:0;right:0;top:0;pointer-events:none;will-change:transform}
-.tick{position:absolute;left:0;right:0;height:0}.tick-line{position:absolute;right:0;top:0;height:1px;background:var(--ink);transform-origin:right center}.tick-label{position:absolute;right:24px;top:0;transform:translateY(-50%);font:9px/1 monospace;letter-spacing:.08em;color:var(--ink);opacity:.5}
-#zoomBand{position:absolute;left:0;right:0;top:0;background:color-mix(in srgb,var(--ink) 10%,transparent);border-top:1px solid color-mix(in srgb,var(--ink) 50%,transparent);border-bottom:1px solid color-mix(in srgb,var(--ink) 50%,transparent);opacity:0;pointer-events:none}
-#needle{position:absolute;left:0;right:0;top:0;height:0;opacity:0;pointer-events:none;will-change:transform}
-#needleLine{position:absolute;left:0;right:0;top:0;height:1px;background:var(--accent);box-shadow:0 0 6px var(--accent)}
-#percent{position:absolute;right:2px;top:4px;color:var(--accent-ink);font:9px/1 monospace;letter-spacing:.08em;white-space:nowrap}.ruler-digits{height:1em;line-height:1;display:inline-flex;overflow:hidden}.ruler-digit-col{display:flex;flex-direction:column;transition:transform .28s cubic-bezier(.2,.9,.2,1)}.ruler-digit-col>span{height:1em;display:block}
-</style></head><body><main id="main"></main><div id="ruler" role="scrollbar" aria-controls="main" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Page position"><div id="glass" aria-hidden="true"></div><div id="tickRail" aria-hidden="true"></div><div id="zoomBand" aria-hidden="true"></div><div id="needle" aria-hidden="true"><div id="needleLine"></div><div id="percent"><span class="ruler-digits" id="digits"></span><span style="margin-left:2px">%</span></div></div></div>
+:root{--bg:#f2f1ee;--ink:#101014;--accent:#2d81ff;--muted:#6c6b69}
+*{box-sizing:border-box}html{scrollbar-width:none;scroll-behavior:auto}html::-webkit-scrollbar{display:none}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+article{width:min(780px,calc(100% - 190px));margin:0 auto 0 7%;padding-bottom:30vh}
+section{padding:90px 0 130px;min-height:76vh;border-top:1px solid #d9d7d2;scroll-margin-top:65px}
+section:first-child{border:0;min-height:92vh;padding-top:20vh}
+h1,h2,h3{font-weight:500;letter-spacing:-.065em;line-height:1.04;margin:0 0 40px}h1{font-size:clamp(55px,9vw,112px)}h2{font-size:clamp(40px,6vw,76px)}h3{font-size:clamp(28px,4vw,46px)}
+p{max-width:660px;font-size:clamp(17px,1.55vw,21px);line-height:1.6;margin:0 0 24px}small{font:11px monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#ruler{position:fixed;right:0;top:0;width:60px;height:100dvh;overflow:hidden;cursor:crosshair;touch-action:none;user-select:none;z-index:40}
+#glass{position:absolute;inset:0;pointer-events:none;backdrop-filter:blur(9px);background:color-mix(in srgb,var(--bg) 55%,transparent);mask-image:linear-gradient(to left,black 40%,rgba(0,0,0,.75) 48%,rgba(0,0,0,.5) 58%,transparent 100%)}
+.rail{position:absolute;inset:0;pointer-events:none;will-change:transform,opacity}.tick{position:absolute;right:0;height:1px;width:100%}.tick-line{position:absolute;right:0;top:0;height:1px;background:var(--ink);transform-origin:right center}.tick-label{position:absolute;right:24px;top:0;transform:translateY(-50%);font:9px/1 monospace;letter-spacing:.08em;opacity:.55}
+#idleRail{opacity:1}#hoverRail{opacity:0}
+#zoomBand{position:absolute;inset-inline:0;top:0;background:rgba(16,16,20,.09);border-top:1px solid rgba(16,16,20,.5);border-bottom:1px solid rgba(16,16,20,.5);pointer-events:none;opacity:0}
+#needle{position:absolute;left:0;right:0;top:0;opacity:0;pointer-events:none;will-change:transform}
+#needleLine{height:1px;background:var(--accent);box-shadow:0 0 6px var(--accent)}
+#percent{position:absolute;right:2px;top:5px;font:9px monospace;color:#1659c4;white-space:nowrap;letter-spacing:.08em}
+#sectionIndex{position:fixed;inset:0 60px 0 auto;width:min(300px,28vw);pointer-events:none;z-index:41;overflow:hidden}
+.index-item{position:absolute;right:7px;white-space:nowrap;text-align:right;will-change:transform,opacity;pointer-events:auto;text-decoration:none;color:var(--ink);line-height:1;letter-spacing:-.035em;font-weight:500;text-shadow:0 0 4px var(--bg),0 0 9px var(--bg);transition:color .15s}
+.index-item:hover,.index-item.active{color:#1659c4}
+.index-item .section-type{font:9px monospace;vertical-align:middle;margin-left:8px;color:var(--muted);letter-spacing:0}
+#help{position:fixed;left:16px;bottom:14px;font:11px/1.5 monospace;color:var(--muted);background:var(--bg);padding:5px;z-index:9}
+@media(max-width:700px){article{width:calc(100% - 120px);margin-left:22px}#sectionIndex{width:180px}.index-item{font-size:13px!important}#help{display:none}}
+</style>
+</head>
+<body>
+<article id="main">
+<section id="start" data-index="START" data-level="H1"><small>Section 01 / H1</small><h1>Measuring<br>the page.</h1><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris dictum euismod magna, quis malesuada massa congue non. Phasellus non magna non lectus feugiat pretium. Suspendisse potenti.</p><p>Move the mouse over the right-hand ruler to reveal the second, compressed scale. Drag it to navigate the page. Section names move with their matching document headings.</p></section>
+<section id="introduction" data-index="INTRODUCTION" data-level="H2"><small>Section 02 / H2</small><h2>Introduction</h2><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam vitae suscipit lacus. Nulla mollis nibh in sem tristique, sed tincidunt nisi elementum. Curabitur ac faucibus est, eget rutrum odio.</p><p>Quisque convallis, nunc vitae tincidunt suscipit, ante nisl vehicula elit, et lacinia metus arcu vel justo. Proin at magna sed augue porttitor ornare.</p><p>Aliquam fermentum egestas massa, at dignissim est laoreet ac. Morbi faucibus malesuada nibh.</p></section>
+<section id="typography" data-index="TYPOGRAPHY" data-level="H2"><small>Section 03 / H2</small><h2>Typography</h2><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus accumsan vestibulum nibh, vel pharetra lectus vehicula et. Integer in erat vulputate, eleifend purus at, maximus eros.</p><p>Etiam congue orci a nunc luctus, a sodales nisl tincidunt. Vestibulum sagittis ultricies ex, id auctor neque tincidunt eget. Donec dapibus posuere lacus.</p></section>
+<section id="first-detail" data-index="HIERARCHY" data-level="H3"><small>Section 04 / H3</small><h3>Heading hierarchy</h3><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec volutpat ligula vel libero sagittis, eget porta mi finibus. Etiam vestibulum, risus sit amet blandit pellentesque, diam elit imperdiet augue, eu dignissim ipsum quam a velit.</p><p>Fusce id dui lacus. Donec aliquet, eros nec malesuada porttitor, est lectus vulputate massa, nec rhoncus sem nunc non enim.</p></section>
+<section id="layout" data-index="LAYOUT" data-level="H2"><small>Section 05 / H2</small><h2>Layout &amp; spacing</h2><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer tristique mauris non neque imperdiet rhoncus. Ut vitae odio varius, malesuada tellus ut, commodo leo. Aliquam erat volutpat.</p><p>Donec facilisis nisl at dui aliquam, vel vehicula dui maximus. Nam non ultrices dui, ac porttitor velit. Maecenas interdum augue ut posuere maximus.</p></section>
+<section id="second-detail" data-index="PROPORTIONS" data-level="H3"><small>Section 06 / H3</small><h3>Proportions</h3><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras id libero dignissim, viverra quam ut, cursus augue. Sed et est odio. Mauris mollis dapibus augue eget sollicitudin.</p><p>Sed id pretium magna. Duis vel neque neque. Pellentesque faucibus, nulla sit amet luctus rhoncus, augue nisi ullamcorper ex, posuere imperdiet purus dolor non sem.</p></section>
+<section id="interaction" data-index="INTERACTION" data-level="H2"><small>Section 07 / H2</small><h2>Interaction</h2><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam interdum lectus ut lectus tristique viverra. Proin pellentesque ipsum ut dui dignissim, eu porta justo feugiat.</p><p>Aenean placerat purus ac nisl dictum, sed molestie ante fermentum. Fusce tincidunt ipsum id dui maximus, id tincidunt nibh fringilla.</p></section>
+<section id="get-started" data-index="GET STARTED" data-level="H1"><small>Section 08 / H1</small><h1>Get started.</h1><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent ullamcorper, est in ultricies convallis, nibh libero dictum justo, et rutrum leo ante quis mauris.</p><p>Scroll to the end, then use the right-hand section labels to jump back to an earlier heading.</p></section>
+</article>
+<div id="ruler" role="scrollbar" aria-controls="main" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Page position" tabindex="0"><div id="glass"></div><div id="idleRail" class="rail"></div><div id="hoverRail" class="rail"></div><div id="zoomBand"></div><div id="needle"><div id="needleLine"></div><div id="percent">000 %</div></div></div>
+<nav id="sectionIndex" aria-label="Floating page index"></nav>
+<div id="help">IDLE: document-length ruler · HOVER: 0–100% overview · DRAG: scroll · CLICK HEADING: jump</div>
 <script>
-/* Standalone reimplementation of the interaction/mapping visible in ArtCraft's
-   captured production bundle (29wilaqtb26u5.js). No React/Next.js dependencies. */
 (()=>{'use strict';
-const ruler=document.getElementById('ruler'),rail=document.getElementById('tickRail'),needle=document.getElementById('needle'),band=document.getElementById('zoomBand'),digits=document.getElementById('digits');
-const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));const cols=[];let zoom=0,zoomTarget=0,drag=false,dirty=true;
-for(let i=0;i<=100;i++){const t=document.createElement('div');t.className='tick';const line=document.createElement('span');line.className='tick-line';line.style.width=(i%5===0?20:10)+'px';line.style.opacity=i%5===0?'.8':'.4';t.append(line);if(i%5===0){const l=document.createElement('span');l.className='tick-label';l.textContent=i;t.append(l)}rail.append(t)}
-for(let k=0;k<3;k++){const col=document.createElement('span');col.className='ruler-digit-col';for(let n=0;n<=9;n++){const sp=document.createElement('span');sp.textContent=n;col.append(sp)}digits.append(col);cols.push(col)}
-const ticks=[...rail.children];let lastDigits=[-1,-1,-1];
-function dims(){const vh=innerHeight,docH=document.documentElement.scrollHeight,max=Math.max(1,docH-vh),pos=clamp(scrollY,0,max),ratio=pos/max,edgePad=12,base=48+edgePad,span=Math.max(1,vh-48-2*edgePad),drift=base-ratio*(48+2*edgePad);return{vh,docH,max,pos,ratio,base,span,drift}}
-function scrollAt(y){const d=dims();scrollTo({top:clamp((y-d.base)/d.span,0,1)*d.max,behavior:'instant'})}
-function render(){const d=dims();const moved=-d.pos+d.drift;rail.style.transform=`translate3d(0,${moved}px,0)`;const tickHeight=d.docH/100;for(let i=0;i<ticks.length;i++)ticks[i].style.top=(tickHeight*i)+'px';
-const pct=d.ratio*100,markY=d.base+d.ratio*d.span;needle.style.transform=`translate3d(0,${markY}px,0)`;needle.style.opacity=String(zoom);band.style.transform=`translate3d(0,${d.base+d.pos/d.docH*d.span}px,0)`;band.style.height=(d.vh/d.docH*d.span)+'px';band.style.opacity=String(zoom*.9);
-const v=String(Math.round(pct)).padStart(3,'0');for(let j=0;j<3;j++){const n=+v[j];if(n!==lastDigits[j]){cols[j].style.transform=`translateY(-${n}em)`;lastDigits[j]=n}}
-if(zoom!==zoomTarget){zoom+=(zoomTarget-zoom)*.18;if(Math.abs(zoom-zoomTarget)<.002)zoom=zoomTarget}requestAnimationFrame(render)}
-function pointerY(e){return e.clientY-ruler.getBoundingClientRect().top}
-ruler.addEventListener('pointerenter',()=>{zoomTarget=1});ruler.addEventListener('pointerleave',()=>{if(!drag)zoomTarget=0});
-ruler.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag=true;zoomTarget=1;ruler.setPointerCapture(e.pointerId);scrollAt(pointerY(e));e.preventDefault()});ruler.addEventListener('pointermove',e=>{if(drag)scrollAt(pointerY(e))});
-ruler.addEventListener('pointerup',e=>{drag=false;if(ruler.hasPointerCapture(e.pointerId))ruler.releasePointerCapture(e.pointerId);zoomTarget=ruler.matches(':hover')?1:0});ruler.addEventListener('pointercancel',()=>{drag=false;zoomTarget=0});
-ruler.addEventListener('keydown',e=>{let amount=0;if(e.key==='ArrowDown')amount=60;else if(e.key==='ArrowUp')amount=-60;else if(e.key==='PageDown')amount=innerHeight;else if(e.key==='PageUp')amount=-innerHeight;else if(e.key==='Home'){scrollTo(0,0);e.preventDefault();return}else if(e.key==='End'){scrollTo(0,document.documentElement.scrollHeight);e.preventDefault();return}else return;scrollBy(0,amount);e.preventDefault()});ruler.tabIndex=0;
-requestAnimationFrame(render);
+const $=id=>document.getElementById(id),ruler=$('ruler'),idle=$('idleRail'),hover=$('hoverRail'),band=$('zoomBand'),needle=$('needle'),percent=$('percent'),index=$('sectionIndex');
+const sections=[...document.querySelectorAll('article section')], clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const NAV=48,PAD=12;let z=0,target=0,drag=false,docH=1,vh=1,maxScroll=1,metrics=[],ticksIdle=[],ticksHover=[];
+// Two independent scales: idle ticks live at document coordinates; hover ticks are a compact fixed 0–100% ruler.
+function makeTicks(parent,compact){const arr=[];for(let i=0;i<=100;i++) {let tick=document.createElement('div');tick.className='tick';let line=document.createElement('span');line.className='tick-line';line.style.width=(i%5===0?20:10)+'px';line.style.opacity=i%5===0?'.85':'.45';tick.append(line);if(i%5===0){let label=document.createElement('span');label.className='tick-label';label.textContent=i;tick.append(label)}parent.append(tick);arr.push(tick)}return arr}
+ticksIdle=makeTicks(idle,false);ticksHover=makeTicks(hover,true);
+const links=sections.map((sec,i)=>{let a=document.createElement('a');a.className='index-item';a.href='#'+sec.id;a.setAttribute('aria-label','Jump to '+sec.dataset.index);a.innerHTML='<span>'+sec.dataset.index+'</span><span class="section-type">'+sec.dataset.level+'</span>';index.append(a);a.addEventListener('click',e=>{e.preventDefault();sec.scrollIntoView({behavior:'smooth',block:'start'});history.replaceState(null,'','#'+sec.id)});return a});
+function measure(){vh=innerHeight;docH=document.documentElement.scrollHeight;maxScroll=Math.max(1,docH-vh);metrics=sections.map(s=>({start:s.getBoundingClientRect().top+scrollY,height:s.offsetHeight}));for(let i=0;i<=100;i++){ticksIdle[i].style.top=(docH*i/100)+'px';ticksHover[i].style.top=(NAV+PAD+(vh-NAV-PAD*2)*i/100)+'px'}}
+function toScroll(y){return clamp((y-NAV-PAD)/(vh-NAV-PAD*2),0,1)*maxScroll}
+function render(){const y=clamp(scrollY,0,maxScroll),ratio=y/maxScroll,span=vh-NAV-PAD*2,drift=(NAV+PAD)-ratio*(NAV+PAD*2),idleOffset=-y+drift,markY=NAV+PAD+span*ratio;
+z+=(target-z)*.18;if(Math.abs(z-target)<.002)z=target;
+idle.style.transform=`translate3d(0,${idleOffset}px,0)`;idle.style.opacity=String(1-z);hover.style.opacity=String(z);
+needle.style.transform=`translate3d(0,${markY}px,0)`;needle.style.opacity=String(z);percent.textContent=String(Math.round(ratio*100)).padStart(3,'0')+' %';
+const bandH=vh/docH*span;band.style.transform=`translate3d(0,${NAV+PAD+ratio*(span-bandH)}px,0)`;band.style.height=bandH+'px';band.style.opacity=String(z*.9);
+links.forEach((a,i)=>{const m=metrics[i];if(!m)return;const sectionRatio=clamp(m.start/maxScroll,0,1);const world=m.start-y+drift;const compact=NAV+PAD+sectionRatio*span;const position=world*(1-z)+compact*z;const active=y>=m.start-85&&(i===metrics.length-1||y<metrics[i+1].start-85);a.classList.toggle('active',active);a.style.fontSize=(active?24:16)+'px';a.style.opacity=String(clamp((position+35)/65,0,1)*clamp((vh-position+20)/65,0,1));a.style.transform=`translate3d(0,${position}px,0)`;});
+ruler.setAttribute('aria-valuenow',String(Math.round(ratio*100)));requestAnimationFrame(render)}
+function pointInside(e){const r=ruler.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom}
+ruler.addEventListener('pointerenter',()=>target=1);ruler.addEventListener('pointerleave',()=>{if(!drag)target=0});ruler.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag=true;target=1;ruler.setPointerCapture(e.pointerId);scrollTo({top:toScroll(e.clientY),behavior:'instant'});e.preventDefault()});ruler.addEventListener('pointermove',e=>{if(drag)scrollTo({top:toScroll(e.clientY),behavior:'instant'})});
+function release(e){drag=false;if(ruler.hasPointerCapture(e.pointerId))ruler.releasePointerCapture(e.pointerId);target=pointInside(e)?1:0}
+ruler.addEventListener('pointerup',release);ruler.addEventListener('pointercancel',release);
+ruler.addEventListener('keydown',e=>{let step={'ArrowDown':60,'ArrowUp':-60,'PageDown':vh,'PageUp':-vh}[e.key];if(e.key==='Home')step=-Infinity;if(e.key==='End')step=Infinity;if(step===undefined)return;e.preventDefault();if(!Number.isFinite(step))scrollTo({top:step===Infinity?maxScroll:0});else scrollBy({top:step})});
+addEventListener('resize',measure);addEventListener('load',measure);document.fonts?.ready.then(measure);new ResizeObserver(measure).observe(document.querySelector('article'));measure();requestAnimationFrame(render);
 })();
-</script></body></html>
+</script>
+</body>
+</html>
