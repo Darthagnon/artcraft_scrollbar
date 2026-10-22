@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ruler Scrollbar Demo</title>
+<style>
+*{box-sizing:border-box}html{scrollbar-width:none}html::-webkit-scrollbar{display:none}body{margin:0;background:#f7f7f4;color:#222;font:14px Arial,sans-serif}main{min-height:450vh;padding:36px 80px 36px 36px}h1{font-size:18px;font-weight:500}.ruler{position:fixed;right:0;top:0;height:100vh;width:48px;background:#e8e7e1;border-left:1px solid #aaa;cursor:pointer;touch-action:none;user-select:none;overflow:hidden}.ticks{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,#666 0 1px,transparent 1px 10px);mask-image:linear-gradient(to right,black 0 11px,transparent 11px);-webkit-mask-image:linear-gradient(to right,black 0 11px,transparent 11px)}.tick{position:absolute;right:0;height:1px;background:#777;width:12px}.tick.major{width:23px;background:#333}.tick span{position:absolute;right:26px;top:-6px;font-size:9px;color:#666}.marker{position:absolute;right:0;left:0;height:18px;transform:translateY(-50%);background:rgba(20,20,20,.12);border-top:1px solid #222;border-bottom:1px solid #222;pointer-events:none}.marker:before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:9px solid #222}.label{position:fixed;bottom:14px;left:36px;color:#777}
+</style>
+</head>
+<body>
+<main><h1>Ruler scrollbar demo</h1><p>Scroll, drag the ruler or click a tick to navigate.</p></main>
+<div class="ruler" id="ruler" role="scrollbar" aria-label="Page scrollbar" aria-orientation="vertical" tabindex="0"><div class="ticks" id="ticks"></div><div class="marker" id="marker"></div></div>
+<div class="label" id="status">0%</div>
+<script>
+(function(){
+ var ruler=document.getElementById('ruler'),ticks=document.getElementById('ticks'),marker=document.getElementById('marker'),status=document.getElementById('status');
+ var dragging=false;
+ function maxScroll(){return Math.max(0,document.documentElement.scrollHeight-innerHeight)}
+ function percent(){return maxScroll()?scrollY/maxScroll():0}
+ function draw(){
+  var h=ruler.clientHeight,step=10,html='';
+  for(var y=0;y<h;y+=step){var n=Math.round(y/step),major=n%5===0;html+='<div class="tick'+(major?' major':'')+'" style="top:'+y+'px">'+(major?'<span>'+n*10+'</span>':'')+'</div>'}
+  ticks.innerHTML=html;update();
+ }
+ function update(){var p=percent();marker.style.top=(9+p*(ruler.clientHeight-18))+'px';status.textContent=Math.round(p*100)+'%';ruler.setAttribute('aria-valuenow',Math.round(p*100));ruler.setAttribute('aria-valuemin','0');ruler.setAttribute('aria-valuemax','100')}
+ function seek(e){var rect=ruler.getBoundingClientRect(),p=Math.max(0,Math.min(1,(e.clientY-rect.top-9)/(rect.height-18)));scrollTo(0,p*maxScroll());update()}
+ ruler.addEventListener('pointerdown',function(e){dragging=true;ruler.setPointerCapture(e.pointerId);seek(e);e.preventDefault()});
+ ruler.addEventListener('pointermove',function(e){if(dragging)seek(e)});
+ ruler.addEventListener('pointerup',function(){dragging=false});ruler.addEventListener('pointercancel',function(){dragging=false});
+ ruler.addEventListener('keydown',function(e){var d=0;if(e.key==='ArrowDown')d=50;else if(e.key==='ArrowUp')d=-50;else if(e.key==='PageDown')d=innerHeight;else if(e.key==='PageUp')d=-innerHeight;else if(e.key==='Home'){scrollTo(0,0);e.preventDefault();return}else if(e.key==='End'){scrollTo(0,maxScroll());e.preventDefault();return}else return;scrollBy(0,d);e.preventDefault()});
+ addEventListener('scroll',update,{passive:true});addEventListener('resize',draw);draw();
+})();
+</script>
+</body>
+</html>
