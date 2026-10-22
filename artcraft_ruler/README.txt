@@ -1,11 +1,7 @@
-ArtCraft ruler v3
+ArtCraft ruler v3.1
 
-Open index.html locally.
+Open index.html in a browser.
 
-Changes from v2:
-- Full-width clickable text hit targets for section index links.
-- Inactive grey vertical titles; active large horizontal title.
-- Corner gathering for offscreen section titles.
-- Two ruler scales preserved.
+Changes: horizontal, hover-enlarging stacks at top and bottom; vertical labels inside viewport; reduced distance to ruler; detailed ticks without needle when hovering the title region.
 
-Per-character drifting/rotation animation is reserved for v4.
+Standalone HTML, no dependencies.

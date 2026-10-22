@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ArtCraft ruler v3 — anchored section index</title>
+<title>ArtCraft ruler v3.1 — anchored section index</title>
 <style>
 :root{--bg:#f2f1ee;--ink:#101014;--accent:#2d81ff;--muted:#6c6b69}
 *{box-sizing:border-box}html{scrollbar-width:none;scroll-behavior:auto}html::-webkit-scrollbar{display:none}
@@ -20,16 +20,20 @@ p{max-width:660px;font-size:clamp(17px,1.55vw,21px);line-height:1.6;margin:0 0 2
 #needle{position:absolute;left:0;right:0;top:0;opacity:0;pointer-events:none;will-change:transform}
 #needleLine{height:1px;background:var(--accent);box-shadow:0 0 6px var(--accent)}
 #percent{position:absolute;right:2px;top:5px;font:9px monospace;color:#1659c4;white-space:nowrap;letter-spacing:.08em}
-#sectionIndex{position:fixed;inset:0 60px 0 auto;width:min(360px,36vw);pointer-events:none;z-index:41;overflow:visible}
-.index-item{position:absolute;right:0;display:inline-flex;align-items:center;justify-content:center;max-width:100%;width:max-content;min-width:30px;box-sizing:border-box;padding:8px 10px;white-space:nowrap;text-align:right;will-change:transform,top;pointer-events:auto;cursor:pointer;text-decoration:none;color:#94918d;line-height:1;letter-spacing:.04em;font:500 11px/1 Arial,Helvetica,sans-serif;text-shadow:0 0 4px var(--bg),0 0 9px var(--bg);transition:color .22s,font-size .22s,letter-spacing .22s,opacity .22s}
+#sectionIndex{position:fixed;inset:0 60px 0 auto;width:min(360px,40vw);pointer-events:none;z-index:41;overflow:visible}
+#indexHoverZone{position:absolute;right:0;top:0;bottom:0;width:86px;pointer-events:auto;background:transparent}
+.index-item{position:absolute;right:0;display:inline-flex;align-items:center;justify-content:flex-end;box-sizing:border-box;width:max-content;max-width:min(350px,39vw);min-width:24px;padding:4px 3px 4px 5px;white-space:nowrap;text-align:right;pointer-events:auto;cursor:pointer;text-decoration:none;color:#94918d;font:500 11px/1.1 Arial,Helvetica,sans-serif;letter-spacing:.04em;text-shadow:0 0 4px var(--bg),0 0 9px var(--bg);transition:color .22s,font-size .22s,letter-spacing .22s,transform .22s;transform-origin:right center}
 .index-item .index-name{display:block;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap}
-.index-item .section-type{display:none}
-.index-item.active{color:var(--ink);font-size:clamp(19px,2.2vw,30px);font-weight:600;letter-spacing:-.06em;padding:11px 13px;z-index:2}
+.index-item.gathered{color:#96938e;font-size:12px;font-weight:500;letter-spacing:0;padding:4px 3px;z-index:3}
+.index-item.gathered .index-name{writing-mode:horizontal-tb;transform:none}
+.index-item.active{color:var(--ink);font-size:clamp(19px,2.2vw,30px);font-weight:650;letter-spacing:-.06em;padding:6px 3px;z-index:4}
 .index-item.active .index-name{writing-mode:horizontal-tb;transform:none}
-.index-item:hover{color:#1659c4}
+.index-item.gathered:hover,.index-item.gathered:focus-visible{font-weight:800;color:var(--ink);transform:scale(1.22)}
+.index-item:not(.gathered):not(.active):hover{color:#1659c4;font-weight:750;transform:scale(1.12)}
+.index-item.active:hover{color:#1659c4;transform:scale(1.05)}
 .index-item:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 #help{position:fixed;left:16px;bottom:14px;font:11px/1.5 monospace;color:var(--muted);background:var(--bg);padding:5px;z-index:9}
-@media(max-width:700px){article{width:calc(100% - 120px);margin-left:22px}#sectionIndex{width:210px;right:55px}.index-item.active{font-size:18px}#help{display:none}}
+@media(max-width:700px){article{width:calc(100% - 120px);margin-left:22px}#sectionIndex{width:210px;right:60px}.index-item.active{font-size:18px}#help{display:none}}
 </style>
 </head>
 <body>
@@ -44,13 +48,13 @@ p{max-width:660px;font-size:clamp(17px,1.55vw,21px);line-height:1.6;margin:0 0 2
 <section id="get-started" data-index="GET STARTED" data-level="H1"><small>Section 08 / H1</small><h1>Get started.</h1><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent ullamcorper, est in ultricies convallis, nibh libero dictum justo, et rutrum leo ante quis mauris.</p><p>Scroll to the end, then use the right-hand section labels to jump back to an earlier heading.</p></section>
 </article>
 <div id="ruler" role="scrollbar" aria-controls="main" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Page position" tabindex="0"><div id="glass"></div><div id="idleRail" class="rail"></div><div id="hoverRail" class="rail"></div><div id="zoomBand"></div><div id="needle"><div id="needleLine"></div><div id="percent">000 %</div></div></div>
-<nav id="sectionIndex" aria-label="Floating page index"></nav>
-<div id="help">IDLE: document-length ruler · HOVER: 0–100% overview · DRAG: scroll · CLICK ANY INDEX TITLE: jump</div>
+<nav id="sectionIndex" aria-label="Floating page index"><div id="indexHoverZone" aria-hidden="true"></div></nav>
+<div id="help">IDLE: full-page ruler · HOVER TITLES: detailed ruler without needle · HOVER RULER: detailed ruler with indicator · CLICK TITLE: jump</div>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),ruler=$('ruler'),idle=$('idleRail'),hover=$('hoverRail'),band=$('zoomBand'),needle=$('needle'),percent=$('percent'),index=$('sectionIndex');
 const sections=[...document.querySelectorAll('article section')], clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const NAV=48,PAD=12;let z=0,target=0,drag=false,docH=1,vh=1,maxScroll=1,metrics=[],ticksIdle=[],ticksHover=[];
+const NAV=48,PAD=12;let z=0,target=0,drag=false,overTitles=false,overRuler=false,docH=1,vh=1,maxScroll=1,metrics=[],ticksIdle=[],ticksHover=[];
 // Two independent scales: idle ticks live at document coordinates; hover ticks are a compact fixed 0–100% ruler.
 function makeTicks(parent,compact){const arr=[];for(let i=0;i<=100;i++) {let tick=document.createElement('div');tick.className='tick';let line=document.createElement('span');line.className='tick-line';line.style.width=(i%5===0?20:10)+'px';line.style.opacity=i%5===0?'.85':'.45';tick.append(line);if(i%5===0){let label=document.createElement('span');label.className='tick-label';label.textContent=i;tick.append(label)}parent.append(tick);arr.push(tick)}return arr}
 ticksIdle=makeTicks(idle,false);ticksHover=makeTicks(hover,true);
@@ -60,50 +64,55 @@ function toScroll(y){return clamp((y-NAV-PAD)/(vh-NAV-PAD*2),0,1)*maxScroll}
 function render(){const y=clamp(scrollY,0,maxScroll),ratio=y/maxScroll,span=vh-NAV-PAD*2,drift=(NAV+PAD)-ratio*(NAV+PAD*2),idleOffset=-y+drift,markY=NAV+PAD+span*ratio;
 z+=(target-z)*.18;if(Math.abs(z-target)<.002)z=target;
 idle.style.transform=`translate3d(0,${idleOffset}px,0)`;idle.style.opacity=String(1-z);hover.style.opacity=String(z);
-needle.style.transform=`translate3d(0,${markY}px,0)`;needle.style.opacity=String(z);percent.textContent=String(Math.round(ratio*100)).padStart(3,'0')+' %';
+needle.style.transform=`translate3d(0,${markY}px,0)`;needle.style.opacity=String(overTitles&&!drag?0:z);percent.textContent=String(Math.round(ratio*100)).padStart(3,'0')+' %';
 const bandH=vh/docH*span;band.style.transform=`translate3d(0,${NAV+PAD+ratio*(span-bandH)}px,0)`;band.style.height=bandH+'px';band.style.opacity=String(z*.9);
-// Keep inactive entries vertical and muted. The current section turns large and horizontal.
-// Gather labels into the viewport edges rather than allowing them to disappear offscreen.
+// Section labels follow their headings until they leave the visible page.
+// Offscreen labels gather into horizontal stacks at the top/bottom corners.
 const activeIndex=Math.max(0,metrics.reduce((found,m,i)=>y>=m.start-85?i:found,0));
-const topGap=7,bottomGap=7,interGap=4;
+const GAP=3, EDGE=7;
 const data=links.map((a,i)=>{
-  const current=i===activeIndex;
-  a.classList.toggle('active',current);
-  const m=metrics[i];
-  const r=clamp(m.start/maxScroll,0,1);
-  const world=m.start-y+drift;
-  const compact=NAV+PAD+r*span;
+  const m=metrics[i], r=clamp(m.start/maxScroll,0,1);
+  const world=m.start-y+drift, compact=NAV+PAD+r*span;
   const ideal=world*(1-z)+compact*z;
-  // offsetHeight accounts for vertical text on passive links, horizontal on active.
-  return {a,i,ideal,height:a.offsetHeight};
+  return {a,i,ideal,active:i===activeIndex,zone:i===activeIndex?'active':(ideal<EDGE?'top':ideal>vh-EDGE-25?'bottom':'middle')};
 });
-const A=data[activeIndex];
-A.top=clamp(A.ideal-A.height*.5,topGap,vh-bottomGap-A.height);
-// Walk out from the active heading. Neighbours compress against the top and bottom corners.
-for(let i=activeIndex-1;i>=0;i--){const d=data[i],next=data[i+1];d.top=Math.min(d.ideal-d.height*.5,next.top-d.height-interGap);}
-for(let i=activeIndex+1;i<data.length;i++){const d=data[i],prev=data[i-1];d.top=Math.max(d.ideal-d.height*.5,prev.top+prev.height+interGap);}
-// When titles pile up at an edge, tighten their spacing while maintaining click targets.
-function gather(items,atBottom){
-  if(!items.length)return;
-  const available=atBottom?vh-bottomGap-(A.top+A.height):A.top-topGap;
-  const needed=items.reduce((n,d)=>n+d.height,0)+interGap*items.length;
-  if(needed<=available){
-    if(atBottom){let cursor=vh-bottomGap;for(let j=items.length-1;j>=0;j--){let d=items[j];d.top=Math.min(d.top,cursor-d.height);cursor=d.top-interGap;}}
-    else{let cursor=topGap;for(const d of items){d.top=Math.max(d.top,cursor);cursor=d.top+d.height+interGap;}}
-    return;
-  }
-  // Oversubscribed edge: stack like ArtCraft's corner cluster rather than clipping.
-  const step=Math.max(9,Math.min(21,(Math.max(0,available)-20)/Math.max(1,items.length)));
-  if(atBottom){items.forEach((d,j)=>{d.top=clamp(A.top+A.height+5+j*step,topGap,vh-bottomGap-d.height);});}
-  else{items.forEach((d,j)=>{d.top=clamp(topGap+j*step,topGap,Math.max(topGap,A.top-5-d.height));});}
+// Assign presentation mode before measuring: vertical labels have different heights.
+for(const d of data){d.a.classList.toggle('active',d.active);d.a.classList.toggle('gathered',d.zone==='top'||d.zone==='bottom');}
+const top=data.filter(d=>d.zone==='top'),bottom=data.filter(d=>d.zone==='bottom');
+const middle=data.filter(d=>d.zone==='middle'||d.zone==='active');
+const topHeight=top.reduce((sum,d)=>sum+d.a.offsetHeight+GAP,0);
+const bottomHeight=bottom.reduce((sum,d)=>sum+d.a.offsetHeight+GAP,0);
+let cursor=EDGE;
+for(const d of top){d.top=cursor;cursor+=d.a.offsetHeight+GAP;}
+cursor=vh-EDGE;
+for(let j=bottom.length-1;j>=0;j--){const d=bottom[j];cursor-=d.a.offsetHeight;d.top=cursor;cursor-=GAP;}
+// Onscreen vertical labels retain their document or overview-ruler position.
+// The active section enlarges horizontally but cannot cross the corner stacks.
+for(const d of middle){
+  const height=d.a.offsetHeight;
+  const lo=EDGE+topHeight,hi=vh-EDGE-bottomHeight-height;
+  d.top=clamp(d.ideal-height/2,lo,Math.max(lo,hi));
 }
-gather(data.slice(0,activeIndex),false);
-gather(data.slice(activeIndex+1),true);
-data.forEach(d=>{d.a.style.top=d.top.toFixed(2)+'px';d.a.style.opacity='1';});
+// Keep labels separated, including when heading markers are close together.
+for(let j=1;j<middle.length;j++){
+  const prev=middle[j-1],d=middle[j];
+  d.top=Math.max(d.top,prev.top+prev.a.offsetHeight+GAP);
+}
+for(const d of data){d.a.style.top=Math.round(d.top)+'px';d.a.style.opacity='1';}
 ruler.setAttribute('aria-valuenow',String(Math.round(ratio*100)));requestAnimationFrame(render)}
 function pointInside(e){const r=ruler.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom}
-ruler.addEventListener('pointerenter',()=>target=1);ruler.addEventListener('pointerleave',()=>{if(!drag)target=0});ruler.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag=true;target=1;ruler.setPointerCapture(e.pointerId);scrollTo({top:toScroll(e.clientY),behavior:'instant'});e.preventDefault()});ruler.addEventListener('pointermove',e=>{if(drag)scrollTo({top:toScroll(e.clientY),behavior:'instant'})});
-function release(e){drag=false;if(ruler.hasPointerCapture(e.pointerId))ruler.releasePointerCapture(e.pointerId);target=pointInside(e)?1:0}
+// The title hit area also activates the detailed ruler, without its needle/percentage.
+function updateHover(e){
+  const isTitle=!!(e.target.closest?.('#sectionIndex'));
+  const inTitleStrip=e.clientX>=innerWidth-146&&e.clientX<innerWidth-60;
+  overTitles=!drag&&(isTitle||inTitleStrip)&&e.clientX<innerWidth-60;
+  overRuler=e.clientX>=innerWidth-60;
+  target=drag||overTitles||overRuler?1:0;
+}
+document.addEventListener('pointermove',updateHover,{passive:true});
+document.addEventListener('pointerleave',()=>{if(!drag){overTitles=false;overRuler=false;target=0}});
+ruler.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag=true;overTitles=false;target=1;ruler.setPointerCapture(e.pointerId);scrollTo({top:toScroll(e.clientY),behavior:'instant'});e.preventDefault()});ruler.addEventListener('pointermove',e=>{if(drag)scrollTo({top:toScroll(e.clientY),behavior:'instant'})});
+function release(e){drag=false;if(ruler.hasPointerCapture(e.pointerId))ruler.releasePointerCapture(e.pointerId);target=overTitles||pointInside(e)?1:0}
 ruler.addEventListener('pointerup',release);ruler.addEventListener('pointercancel',release);
 ruler.addEventListener('keydown',e=>{let step={'ArrowDown':60,'ArrowUp':-60,'PageDown':vh,'PageUp':-vh}[e.key];if(e.key==='Home')step=-Infinity;if(e.key==='End')step=Infinity;if(step===undefined)return;e.preventDefault();if(!Number.isFinite(step))scrollTo({top:step===Infinity?maxScroll:0});else scrollBy({top:step})});
 addEventListener('resize',measure);addEventListener('load',measure);document.fonts?.ready.then(measure);new ResizeObserver(measure).observe(document.querySelector('article'));measure();requestAnimationFrame(render);
