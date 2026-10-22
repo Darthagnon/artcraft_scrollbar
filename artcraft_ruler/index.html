@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ArtCraft ruler v3.1 — anchored section index</title>
+<title>ArtCraft ruler v3.2 — anchored section index</title>
 <style>
 :root{--bg:#f2f1ee;--ink:#101014;--accent:#2d81ff;--muted:#6c6b69}
 *{box-sizing:border-box}html{scrollbar-width:none;scroll-behavior:auto}html::-webkit-scrollbar{display:none}
@@ -34,6 +34,7 @@ p{max-width:660px;font-size:clamp(17px,1.55vw,21px);line-height:1.6;margin:0 0 2
 .index-item:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 #help{position:fixed;left:16px;bottom:14px;font:11px/1.5 monospace;color:var(--muted);background:var(--bg);padding:5px;z-index:9}
 @media(max-width:700px){article{width:calc(100% - 120px);margin-left:22px}#sectionIndex{width:210px;right:60px}.index-item.active{font-size:18px}#help{display:none}}
+.index-item.gathered:hover .index-name,.index-item.gathered:focus-visible .index-name{writing-mode:horizontal-tb;transform:none}
 </style>
 </head>
 <body>
@@ -54,7 +55,7 @@ p{max-width:660px;font-size:clamp(17px,1.55vw,21px);line-height:1.6;margin:0 0 2
 (()=>{'use strict';
 const $=id=>document.getElementById(id),ruler=$('ruler'),idle=$('idleRail'),hover=$('hoverRail'),band=$('zoomBand'),needle=$('needle'),percent=$('percent'),index=$('sectionIndex');
 const sections=[...document.querySelectorAll('article section')], clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const NAV=48,PAD=12;let z=0,target=0,drag=false,overTitles=false,overRuler=false,docH=1,vh=1,maxScroll=1,metrics=[],ticksIdle=[],ticksHover=[];
+const NAV=48,PAD=12;let z=0,target=0,drag=false,overTitles=false,overRuler=false,docH=1,vh=1,maxScroll=1,metrics=[],ticksIdle=[],ticksHover=[],frozenIndexZones=null;
 // Two independent scales: idle ticks live at document coordinates; hover ticks are a compact fixed 0–100% ruler.
 function makeTicks(parent,compact){const arr=[];for(let i=0;i<=100;i++) {let tick=document.createElement('div');tick.className='tick';let line=document.createElement('span');line.className='tick-line';line.style.width=(i%5===0?20:10)+'px';line.style.opacity=i%5===0?'.85':'.45';tick.append(line);if(i%5===0){let label=document.createElement('span');label.className='tick-label';label.textContent=i;tick.append(label)}parent.append(tick);arr.push(tick)}return arr}
 ticksIdle=makeTicks(idle,false);ticksHover=makeTicks(hover,true);
@@ -74,7 +75,9 @@ const data=links.map((a,i)=>{
   const m=metrics[i], r=clamp(m.start/maxScroll,0,1);
   const world=m.start-y+drift, compact=NAV+PAD+r*span;
   const ideal=world*(1-z)+compact*z;
-  return {a,i,ideal,active:i===activeIndex,zone:i===activeIndex?'active':(ideal<EDGE?'top':ideal>vh-EDGE-25?'bottom':'middle')};
+  const computedZone=i===activeIndex?'active':(ideal<EDGE?'top':ideal>vh-EDGE-25?'bottom':'middle');
+  const zone=frozenIndexZones?.[i] && i!==activeIndex ? frozenIndexZones[i] : computedZone;
+  return {a,i,ideal,active:i===activeIndex,zone};
 });
 // Assign presentation mode before measuring: vertical labels have different heights.
 for(const d of data){d.a.classList.toggle('active',d.active);d.a.classList.toggle('gathered',d.zone==='top'||d.zone==='bottom');}
@@ -105,13 +108,18 @@ function pointInside(e){const r=ruler.getBoundingClientRect();return e.clientX>=
 function updateHover(e){
   const isTitle=!!(e.target.closest?.('#sectionIndex'));
   const inTitleStrip=e.clientX>=innerWidth-146&&e.clientX<innerWidth-60;
-  overTitles=!drag&&(isTitle||inTitleStrip)&&e.clientX<innerWidth-60;
+  const nextOverTitles=!drag&&(isTitle||inTitleStrip)&&e.clientX<innerWidth-60;
+  // Keep corner labels in their horizontal stacked state while the title area is hovered.
+  // Otherwise the change from document ruler to detailed ruler changes their zone.
+  if(nextOverTitles&&!overTitles) frozenIndexZones=links.map(a=>a.classList.contains('gathered')?(a.offsetTop<innerHeight/2?'top':'bottom'):null);
+  if(!nextOverTitles) frozenIndexZones=null;
+  overTitles=nextOverTitles;
   overRuler=e.clientX>=innerWidth-60;
   target=drag||overTitles||overRuler?1:0;
 }
 document.addEventListener('pointermove',updateHover,{passive:true});
-document.addEventListener('pointerleave',()=>{if(!drag){overTitles=false;overRuler=false;target=0}});
-ruler.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag=true;overTitles=false;target=1;ruler.setPointerCapture(e.pointerId);scrollTo({top:toScroll(e.clientY),behavior:'instant'});e.preventDefault()});ruler.addEventListener('pointermove',e=>{if(drag)scrollTo({top:toScroll(e.clientY),behavior:'instant'})});
+document.addEventListener('pointerleave',()=>{if(!drag){overTitles=false;overRuler=false;frozenIndexZones=null;target=0}});
+ruler.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag=true;overTitles=false;frozenIndexZones=null;target=1;ruler.setPointerCapture(e.pointerId);scrollTo({top:toScroll(e.clientY),behavior:'instant'});e.preventDefault()});ruler.addEventListener('pointermove',e=>{if(drag)scrollTo({top:toScroll(e.clientY),behavior:'instant'})});
 function release(e){drag=false;if(ruler.hasPointerCapture(e.pointerId))ruler.releasePointerCapture(e.pointerId);target=overTitles||pointInside(e)?1:0}
 ruler.addEventListener('pointerup',release);ruler.addEventListener('pointercancel',release);
 ruler.addEventListener('keydown',e=>{let step={'ArrowDown':60,'ArrowUp':-60,'PageDown':vh,'PageUp':-vh}[e.key];if(e.key==='Home')step=-Infinity;if(e.key==='End')step=Infinity;if(step===undefined)return;e.preventDefault();if(!Number.isFinite(step))scrollTo({top:step===Infinity?maxScroll:0});else scrollBy({top:step})});
